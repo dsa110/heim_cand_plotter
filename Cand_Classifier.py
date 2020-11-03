@@ -21,8 +21,10 @@ class Cand_Classifier(object):
         return cand['snr'] < self.snr_cut
 
     def is_noise(self, cand):
-        return False
-        #return cand['members'] < self.members_cut
+        try:
+            return cand['members'] < self.members_cut
+        except ValueError:
+            return False
 
     def is_lowdm_rfi(self, cand):
         return cand['dm'] < self.dm_cut
@@ -173,6 +175,8 @@ class TextOutput(object):
 def load_candidates(filename, verbose=False):
     if os.path.getsize(filename) > 0:
         try:
+            # multibeam test data
+            print("--aa--")
             all_cands = \
                 np.loadtxt(filename, ndmin=1,
                     dtype={'names': ('snr','samp_idx','time','filter',
@@ -185,23 +189,41 @@ def load_candidates(filename, verbose=False):
                                        'f4', 'i4')})
         except IndexError:
             try:
+                # single beam test data
+                print("--a--")
                 all_cands = \
                     np.loadtxt(filename, ndmin=1,
                         dtype={'names': ('snr','samp_idx','time','filter',
                                          'dm_trial','dm','members','begin','end'),
                                'formats': ('f4', 'i4', 'f4', 'i4',
-                                           'i4', 'f4', 'i4', 'i4', 'i4')})
-            except IndexError:
+                                           'i4', 'f4','i4','i4','i4')})
+            except:
                 try:
+                    print("--b--")
+                    # DSA data pre-coincidencing
+                    # itime=samp_idx, mjds=time (different units), ibox=filter, ibeam=beam, idm=dm_trial
                     all_cands = \
                         np.loadtxt(filename, ndmin=1,
                             dtype={'names': ('snr','if','samp_idx','time',
                                              'filter','dm_trial','dm','beam'),
                                    'formats': ('f4', 'i4', 'i4', 'f4',
                                                'i4', 'i4', 'f4', 'i4')})
-                    #itime=samp_idx, mjds=time (different units), ibox=filter, ibeam=beam, idm=dm_trial
                 except:
-                    raise
+                    try:
+                        # DSA data post-coincidencing
+                        all_cands = \
+                            np.loadtxt(filename, ndmin=1,
+                                dtype={'names': ('snr','if','samp_idx','time',
+                                                 'filter','dm_trial','dm','members','beam'),
+                                       'formats': ('f4', 'i4', 'i4', 'f4',
+                                                   'i4', 'i4','f4', 'i4',
+                                                   'i4')})
+
+                    except IndexError:
+                        raise
+
+                    else:
+                        multibeam = False
                 else:
                     multibeam = False
             else:
