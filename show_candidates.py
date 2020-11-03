@@ -59,7 +59,7 @@ class CandBrowser(object):
         self.populate_axis()
         self.activate_picking()
 
-        plt.savefig("saved_plots/" + self.Fcands[0].split('\\')[-1][:-5] + ".png")
+        plt.savefig(os.path.join("saved_plots", os.path.basename(self.Fcands[0]) + ".png"))
         plt.show()
 
     def activate_picking(self):
