@@ -60,9 +60,11 @@ class CandBrowser(object):
         self.populate_axis()
         self.activate_picking()
 
-        plt.savefig(os.path.join("saved_plots", os.path.basename(self.Fcands[0]) + ".png"))
-        if(self.interactive):
+        if self.interactive:
             plt.show()
+        else:
+            print(f'Saving plot at {self.Fcands[0]}.png')
+            plt.savefig(os.path.join(os.path.basename(self.Fcands[0]) + ".png"))
 
     def activate_picking(self):
         # Activate interactive picking and buttonsm
@@ -96,6 +98,7 @@ class CandBrowser(object):
 
         # If a file path is given enable beam scrolling
         elif os.path.isfile(self.Pcand):
+            print(f'Using file {self.Pcand}')
             self.Fcands = self.Pcand
             self.Pcand  = self.Pcand.split(self.Pcand.split('\\')[-1])[0]
             self.Pointscroll = False
@@ -104,6 +107,7 @@ class CandBrowser(object):
         self.get_files()
 
     def get_files(self):
+
         if not self.Pointscroll:
             Fcand = self.Fcands
 
