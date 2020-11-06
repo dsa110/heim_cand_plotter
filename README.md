@@ -1,5 +1,5 @@
 # Heimdall Candidate Plotter
-  
+
 The Heimdall Candidate Plotter is a plotting tool designed for easy and efficient offline manual inspection of Heimdall candidates.\
 Firstly, it classifies given candidates from a .cand file into several categories using user defined thresholds. See the "[Categorisation settings](https://gitlab.com/houben.ljm/heim_cand_plotter/-/edit/master/README.md#categorisation-settings)" section below for explanations of the used thresholds.
 
@@ -16,13 +16,15 @@ Then, these categorised candidates are shown in several [overview plots](https:/
       *If, in this second case, other pointings are present in the top directory, the "<" and ">" keys can be used to switch between the
       candidates of individual pointings. However, the data must be structured [in the way described below](https://gitlab.com/houben.ljm/heim_cand_plotter/-/edit/master/README.md#assumed-data-structure) for this to work properly.*
 
-Thirdly, is the shown inspection plotter a GUI to allow interaction with the plotted candidates.
+Thirdly, if the `` --interactive`` option is given, is the shown inspection plotter, a GUI to allow interaction with the plotted candidates.
 For instance, you can click on any candidate to get more detailed information about that specific candidate.
 If the ``--waterfall`` option is given AND the corresponding Filterbanks are present in the pointing directory, one can also immediately inspect the RAW data of a specific selected candidate. Three options are therefore given in the plotter:
  * **"Check DM"**       - useful to check if the given DM by Heimdall is actually the value that returns a signal with the highest SNR.
  * **"Waterfall"**      - shows the dedispersed dynamic spectrum of a candidate.
  * **"Waterfall DM=0"** - shows the dispersed dynamic spectrum of a candidate (the raw data).
-   
+
+The plots are then saved as pngs in heim_cand_plotter/saved_plots.
+
 These functionalities should help a user to faster determine the "realness" of candidates produced by Heimdall.
 Hopefully you will find this plotter useful for your work. Happy singe pulse searching!
 
@@ -35,7 +37,7 @@ It is composed out of 3 sub-plots:
 2.  **SNR-DM plot**; shows the categorised candidates at the respective true SNR and DM. SNRs > 100 are shown at an SNR of 100 to allow for better discrimination of candidates with lower SNR values. The data point sizes do not convey information.
 
     ***Note 1**: the colours in sub-plot 1 and 2 indicate the width of the boxcar with which a candidate was found. Which colour corresponds to which width can be seen in the colour-bar at the right of sub-plot 2.*
-    
+
     ***Note 2**: the interpretation of the marker shapes is explained in the "[Categorisation settings](https://gitlab.com/houben.ljm/heim_cand_plotter/-/edit/master/README.md#categorisation-settings)" section below.*
 3.  **Historgram plot**; shows how many candidates have a DM within the range of a specific DM bin. Therefore, is the full DM range linearly divided into ``NBINS`` bins, a number which can be set with the option ``--nbins``. Since the output .cand file of the ``coincidencer`` is shown here, a histogram of each beam is visible. Otherwise this sub-plot will only show the histogram plot of the candidates in the loaded beam.
 
@@ -57,7 +59,7 @@ Like in Figure 1, three buttons are visible when the option ``--waterfall`` is g
  * **Check DM**; if clicked, opens the new figure shown in the red box. If a real pulse was selected this plot should show a cross, or butterfly shaped pattern with the centre of the shape indicating the DM at which the de-dispersed time-series has the highest SNR. Although not clearly visible in this plot, a small "cross" can be seen at a DM of about 600 pc/cm3 (in the centre of the plot).
  * **Waterfall**; opens a new figure, as shown in the green box, with dynamic spectra of the selected candidate's Filterbank data de-dispersed to its corresponding DM.
  * **Waterfall DM=0**; same as "Waterfall", but now de-dispersed to a DM of 0 (blue box). I.e. not de-dispersed and showing the RAW Filterbank data "as is".
- 
+
 *Waterfall plots explained:*\
 These figures are composed of multiple dynamic spectra, each centred around the time of the selected candidate and de-dispersed with the candidate's DM or DM = 0. If one goes down over the vertical axis, the dynamic spectra are increasingly more downsampled in frequency, where they are increasingly more downsampled in time towards the right of these figures. The downsampling factors are given to the side or below the dynamic spectra.\
 On the top row are the time series shown obtained by summing all frequency channels in time for a given downsampling factor. On the right are the pulse's spectra given, obtained by summing al time samples in frequency for a specific downsampling factor. The MJD corresponding to time "0.0" in the dynamic spectra is given on the bottom of this figure.\
@@ -147,6 +149,7 @@ cand_path               Path to candidate file or folder.
   -w, --waterfall       Enable Filterbank plot tools. If True & 'fil_path' =
                         None the later defaults to '../'. (default: False)
   -v, --verbose         Print more operation details (default: False)
+  -i, --interactive     Launches GUI (default: False)
 ```
 
 ### Categorisation settings:
@@ -175,7 +178,7 @@ cand_path               Path to candidate file or folder.
 
 From the above categorisation setting instructions it follows that `show_candidates.py` groups Heimdall candidates into 5 categories:
 1.  **hidden**; candidates with a lower SNR than `SNR_CUT` are classified as "hidden" and not shown in the Time-DM and SNR-DM plots.
-2.  !["Noise" marker](/images/noise.png "") = **noise**; all candidates classified as "noise", by either having a too low DM or consist out of too few members, are shown with a grey cross. 
+2.  !["Noise" marker](/images/noise.png "") = **noise**; all candidates classified as "noise", by either having a too low DM or consist out of too few members, are shown with a grey cross.
 3.  !["Coincident" marker](/images/coinc.png "") = **coincident**; if a candidate occurs in more than `NBEAM_CUT` beams or is marked as coincident by the `coincidencer`, it is shown with a grey 'plus'.
 4.  !["Wrong Width" marker](/images/wrong_width.png "") = **wrong_width**; the transparent squares indicate candidates that are either too wide or too narrow. The first is determined with the threshold `--filter_cut`, the later is defined as pulses that are narrower than the dispersion smear in the highest frequency channel.
 5.  !["Valid" marker](/images/valid.png "") = **valid**; all candidate not classified as "hidden", "noise", "coincident" or having a "wrong width" are classified as possible valid candidates and indicated with solid circles.
@@ -211,12 +214,17 @@ Note, that their corresponding Filterbank files are not provided, so one can not
 
 To plot a single candidate file:
 ```
+python ./show_candidates.py -v -i test_cands/Z023.5-01.7/57286/all_cand/2015-09-21-14_45_48_01_all.cand
+```
+
+To download the png for a single candidate file without launching the interactive plotter:
+```
 python ./show_candidates.py -v test_cands/Z023.5-01.7/57286/all_cand/2015-09-21-14_45_48_01_all.cand
 ```
 
 To plot all candidates from a pointing:
 ```
-python ./show_candidates.py -v test_cands/Z023.5-01.7/57286/all_cand
+python ./show_candidates.py -v -i test_cands/Z023.5-01.7/57286/all_cand
 ```
 
 
@@ -234,7 +242,7 @@ python ./show_candidates.py -v test_cands/Z023.5-01.7/57286/all_cand
    ```
 
    This is an unresolved bug in matplotlib as of 07.04.2020. To get rid of this message, a workaround has been suggested [here](https://github.com/matplotlib/matplotlib/issues/13033). Though, this error should not hinder the proper working of the plotter.
-   
+
 ## Finally
 ### Author
 *  [**Leon Houben**](https://www.linkedin.com/in/houbenljm) - Radboud University / Max Planck for Radio Astronomy

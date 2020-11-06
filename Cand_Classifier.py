@@ -176,7 +176,6 @@ def load_candidates(filename, verbose=False):
     if os.path.getsize(filename) > 0:
         try:
             # multibeam test data
-            print("--aa--")
             all_cands = \
                 np.loadtxt(filename, ndmin=1,
                     dtype={'names': ('snr','samp_idx','time','filter',
@@ -190,7 +189,6 @@ def load_candidates(filename, verbose=False):
         except IndexError:
             try:
                 # single beam test data
-                print("--a--")
                 all_cands = \
                     np.loadtxt(filename, ndmin=1,
                         dtype={'names': ('snr','samp_idx','time','filter',
@@ -199,7 +197,6 @@ def load_candidates(filename, verbose=False):
                                            'i4', 'f4','i4','i4','i4')})
             except:
                 try:
-                    print("--b--")
                     # DSA data pre-coincidencing
                     # itime=samp_idx, mjds=time (different units), ibox=filter, ibeam=beam, idm=dm_trial
                     all_cands = \

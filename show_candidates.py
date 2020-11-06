@@ -32,7 +32,7 @@ class CandBrowser(object):
     https://matplotlib.org/examples/event_handling/data_browser.html
     """
 
-    def __init__(self,Pcand,Pfil=None,waterfall=False,verbose=False):
+    def __init__(self,Pcand,Pfil=None,waterfall=False,verbose=False,interactive=False):
         """
         Constructor to build plot and take care of
         dynamic repopulation of plots.
@@ -51,6 +51,7 @@ class CandBrowser(object):
         self.Pfil  = Pfil
         self.waterfall = waterfall
         self.verbose   = verbose
+        self.interactive = interactive
 
     def start_browser(self):
         self.load_data()
@@ -60,7 +61,8 @@ class CandBrowser(object):
         self.activate_picking()
 
         plt.savefig(os.path.join("saved_plots", os.path.basename(self.Fcands[0]) + ".png"))
-        plt.show()
+        if(self.interactive):
+            plt.show()
 
     def activate_picking(self):
         # Activate interactive picking and buttonsm
@@ -631,6 +633,8 @@ if __name__ == '__main__':
             help="Enable filterbank plot tools. If True & 'fil_path' = None the later defaults to '../'.")
     parser.add_argument('-v', '--verbose', action='store_true', default=False, \
             help="Print more operation details")
+    parser.add_argument('-i', '--interactive', action='store_true', default=False, \
+            help="Launches GUI")
 
     # Categorisation settings
     classify = parser.add_argument_group('Categorisation settings')
@@ -674,7 +678,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    CB = CandBrowser(args.cand_path,args.fil_path,args.waterfall,args.verbose)
+    CB = CandBrowser(args.cand_path,args.fil_path,args.waterfall,args.verbose,args.interactive)
     CB.nbins    = args.nbins
     CB.tsamp    = args.tsamp
     CB.snr_cut  = args.snr_cut
