@@ -16,6 +16,7 @@ import os,sys
 import argparse
 import subprocess
 import numpy as np
+from matplotlib import use
 import fil_cand_cut as fcc
 import plotfunctions as pf
 import matplotlib.pyplot as plt
@@ -173,6 +174,9 @@ class CandBrowser(object):
             self.categories.append(classifier.categories(cs,mb,self.verbose))
 
     def setup_figure(self):
+        if not self.interactive:
+            use('Agg')
+
         if self.Pointscroll:
             self.fig = plt.figure(figsize=(8.3,11.7)) #A4 portrait
             #https://matplotlib.org/api/_as_gen/matplotlib.pyplot.subplots_adjust.html
