@@ -12,6 +12,7 @@
 ###############################################################################
 
 import time
+import glob
 import os,sys
 import argparse
 import subprocess
@@ -79,17 +80,25 @@ class CandBrowser(object):
 
         # If a directory path is given enable pointing scrolling
         if os.path.isdir(self.Pcand):
+            print("Here:",self.Pcand)
+            #self.Pcand = 'test_cands/Z023.5-01.7/57286/all_cand'
+            #self.Pcand = 'C:\\Users\\Mirabai\ Smoot\\Desktop\\DSA\\heim_cand_plotter\\test_cands\\Z023.5-01.7\\57286\\all_cand'
             #NOTE: this assumes a dir structure of <pointing name>/<MJD>/<cand dirs>
-            paths = sorted(subprocess.check_output(['find', self.Pcand, \
-                           '-mindepth', '1', '-type', 'd'], encoding='ascii').split())
+            # paths = sorted(subprocess.check_output(['find', self.Pcand, \
+            #                '-mindepth', '1', '-type', 'd'], encoding='ascii').split())
+            #paths = os.listdir(self.Pcand)
+            paths = glob.glob(self.Pcand + '\*')
+            print("len(paths):",len(paths))
 
             if len(paths) != 0:
                 self.Pcand = paths[-1]
 
             Ppointing  = self.Pcand.split(self.Pcand.split('/')[-1])[0]
             Ppointing  = os.path.abspath(Ppointing)
-            Ppointings = sorted(subprocess.check_output(['find', Ppointing+'/../..', \
-                           '-mindepth', '2', '-maxdepth', '2', '-type', 'd'], encoding='ascii').split())
+            print("Ppointing:",Ppointing)
+            Ppointings = glob.glob(Ppointing+'\..\*') #I took off one \..
+            # Ppointings = sorted(subprocess.check_output(['find', Ppointing+'/../..', \
+            #                '-mindepth', '2', '-maxdepth', '2', '-type', 'd'], encoding='ascii').split())
             self.Ppointings = [os.path.abspath(path) for path in Ppointings]
             self.Pointscroll = True
             self.Fcandsind = self.Ppointings.index(Ppointing)
@@ -104,14 +113,17 @@ class CandBrowser(object):
         self.get_files()
 
     def get_files(self):
-        if not self.Pointscroll:
+        if not self.Pointscroll: #if given single file
             Fcand = self.Fcands
+            self.Fcands = [self.Fcands]
+        else:
+            self.Fcands = glob.glob(self.Pcand + '\..\*')
 
         ### Get candidate files
         # self.Fcands = sorted(subprocess.check_output(['find', self.Pcand, \
         #                            '-maxdepth', '1', '-type', 'f',\
         #                            '-name', str("*.cand")], encoding='ascii').split())
-        self.Fcands = [Fcand]
+        #self.Fcands = [self.Fcands] #if single file
 
         if len(self.Fcands) == 0:
             raise ValueError("Could not find .cand files in %s" % self.Pcand)
@@ -121,22 +133,23 @@ class CandBrowser(object):
 
             #NOTE: this is for distinguishing between coincidenced and noncoincidenced files
             #NOTE: this assumes a file name of <date>-<time>_<beam number>_<something>.cand
-            # self.beam_num = [x.split('_')[-2] for x in self.Fcands]
-            # try:
-            #     #NOTE: this assumes the coincidenced candidate file has a file name of <date>-<time>_coinced_<something>.cand
-            #     coinced_idx = self.beam_num.index('coinced')
-            # except ValueError:
-            #     print("\n    WARNING: coincidencer's .cand file could not be found!\n")
-            #     self.Fcoincedcand = False
-            #     self.NFcands = len(self.Fcands)
-            # else:
-            #     self.Fcoincedcand = True
-            #     Fcoinced = self.Fcands[coinced_idx]
-            #     del self.Fcands[coinced_idx]
-            #     del self.beam_num[coinced_idx]
-            #     self.NFcands = len(self.Fcands)
-            #     self.Fcands.insert(0,Fcoinced)
-            #     self.beam_num.insert(0,'coinced')
+            if self.Pointscroll:
+                self.beam_num = [x.split('_')[-2] for x in self.Fcands]
+                try:
+                    #NOTE: this assumes the coincidenced candidate file has a file name of <date>-<time>_coinced_<something>.cand
+                    coinced_idx = self.beam_num.index('coinced')
+                except ValueError:
+                    print("\n    WARNING: coincidencer's .cand file could not be found!\n")
+                    self.Fcoincedcand = False
+                    self.NFcands = len(self.Fcands)
+                else:
+                    self.Fcoincedcand = True
+                    Fcoinced = self.Fcands[coinced_idx]
+                    del self.Fcands[coinced_idx]
+                    del self.beam_num[coinced_idx]
+                    self.NFcands = len(self.Fcands)
+                    self.Fcands.insert(0,Fcoinced)
+                    self.beam_num.insert(0,'coinced')
 
         if not self.Pointscroll:
             self.Fcandsind = self.Fcands.index(Fcand)
@@ -310,7 +323,7 @@ class CandBrowser(object):
         self.text = self.text_ax.text(0.,0.,initial_text, \
                           size=10, transform=self.text_ax.transAxes)
         if self.Pointscroll:
-            pointing = self.Ppointings[self.Fcandsind].split('/')[-2]+'/'+self.Ppointings[self.Fcandsind].split('/')[-1]
+            pointing = self.Ppointings[self.Fcandsind].split('\\')[-2]+'/'+self.Ppointings[self.Fcandsind].split('/')[-1]
             self.text_ax.text(1.1,0.55,"Loaded pointing:\n%s" \
                 % pointing, fontsize=14, rotation=-90, transform=self.text_ax.transAxes)
         else:
