@@ -214,17 +214,12 @@ Note, that their corresponding Filterbank files are not provided, so one can not
 
 To plot a single candidate file:
 ```
-python ./show_candidates.py -v -i test_cands/Z023.5-01.7/57286/all_cand/2015-09-21-14_45_48_01_all.cand
+python ./show_candidates.py -v -i (example.cand)
 ```
 
 To download the png for a single candidate file without launching the interactive plotter:
 ```
-python ./show_candidates.py -v test_cands/Z023.5-01.7/57286/all_cand/2015-09-21-14_45_48_01_all.cand
-```
-
-To plot all candidates from a pointing:
-```
-python ./show_candidates.py -v -i test_cands/Z023.5-01.7/57286/all_cand
+python ./show_candidates.py -v (example.cand)
 ```
 
 
