@@ -195,12 +195,13 @@ class CandBrowser(object):
     def fig_single_cand(self):
         #Build cand info plots
         #gs = gridspec.GridSpec(8, 3, height_ratios=[], width_ratios=[2, 2, 1])
-        gs = self.fig.add_gridspec(nrows=16, ncols=3, width_ratios=[2, 2, 1])
+        gs = self.fig.add_gridspec(nrows=24, ncols=3, width_ratios=[2, 2, 1])
         self.num_dm_ax  = [self.fig.add_subplot(gs[:8,0])]
         self.snr_dm_ax  = [self.fig.add_subplot(gs[:8,1])]
         divider = make_axes_locatable(self.snr_dm_ax[-1])
         self.cbar_ax = divider.append_axes("right", size="5%", pad=0.1)
-        self.dm_t_ax    = [self.fig.add_subplot(gs[8:,:2])]
+        self.dm_t_ax    = [self.fig.add_subplot(gs[8:16,:2])]
+        self.bm_t_ax    = [self.fig.add_subplot(gs[16:,:2])]
 
         #Build text and buttons
         self.text_ax        = self.fig.add_subplot(gs[:-4,2])
@@ -288,10 +289,13 @@ class CandBrowser(object):
                 self.num_dm_ax[0].cla()
                 self.snr_dm_ax[0].cla()
                 self.dm_t_ax[0].cla()
+                self.bm_t_ax[0].cla()
             else:
                 pf.DMHistPlot(self.num_dm_ax[0], self.cands[self.Fcandsind], self.nbins, self.multibeam[self.Fcandsind])
                 pf.DMSNRPlot(self.snr_dm_ax[0], self.cbar_ax, self.categories[self.Fcandsind],self.tsamp)
                 pf.TimeDMPlot(self.dm_t_ax[0], self.categories[self.Fcandsind], self.duration, self.snr_cut, \
+                             self.snr_thr, self.mps, self.multibeam[self.Fcandsind])
+                pf.TimeBeamPlot(self.bm_t_ax[0], self.categories[self.Fcandsind], self.duration, self.snr_cut, \
                              self.snr_thr, self.mps, self.multibeam[self.Fcandsind])
 
         # With selection highlights
