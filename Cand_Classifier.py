@@ -173,6 +173,7 @@ class TextOutput(object):
 
 
 def load_candidates(filename, verbose=False):
+    print("in load_candidates, filename =",filename)
     if os.path.getsize(filename) > 0:
         try:
             # multibeam test data
@@ -188,14 +189,15 @@ def load_candidates(filename, verbose=False):
                                        'f4', 'i4')})
         except IndexError:
             try:
-                # single beam test data
+                # DSA data post-coincidencing
                 all_cands = \
                     np.loadtxt(filename, ndmin=1,
-                        dtype={'names': ('snr','samp_idx','time','filter',
-                                         'dm_trial','dm','members','begin','end'),
-                               'formats': ('f4', 'i4', 'f4', 'i4',
-                                           'i4', 'f4','i4','i4','i4')})
-            except:
+                        dtype={'names': ('snr','if','samp_idx','time',
+                                         'filter','dm_trial','dm','members','beam'),
+                               'formats': ('f4', 'i4', 'i4', 'f4',
+                                           'i4', 'i4','f4', 'i4',
+                                           'i4')})
+            except IndexError:
                 try:
                     # DSA data pre-coincidencing
                     # itime=samp_idx, mjds=time (different units), ibox=filter, ibeam=beam, idm=dm_trial
@@ -205,22 +207,8 @@ def load_candidates(filename, verbose=False):
                                              'filter','dm_trial','dm','beam'),
                                    'formats': ('f4', 'i4', 'i4', 'f4',
                                                'i4', 'i4', 'f4', 'i4')})
-                except:
-                    try:
-                        # DSA data post-coincidencing
-                        all_cands = \
-                            np.loadtxt(filename, ndmin=1,
-                                dtype={'names': ('snr','if','samp_idx','time',
-                                                 'filter','dm_trial','dm','members','beam'),
-                                       'formats': ('f4', 'i4', 'i4', 'f4',
-                                                   'i4', 'i4','f4', 'i4',
-                                                   'i4')})
-
-                    except IndexError:
-                        raise
-
-                    else:
-                        multibeam = False
+                except IndexError:
+                    raise
                 else:
                     multibeam = False
             else:

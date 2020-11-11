@@ -274,3 +274,78 @@ def DMSNRPlot_multibeams(ax,ax_cbar,data,tsamp=54.613e-6):
         cbar.ax.set_yticklabels([x[0:5] for x in (2.**cticks * tsamp*1000.).astype('str')])
         cbar.set_alpha(1)
         cbar.draw_all()
+
+def TimeBeamPlot(ax,data,duration=None,snr_cut=6.5,snr_thr=25.,mps=30.,multibeam=False,axrange=True,axlabel=True):
+    ax.cla() #Clear the current axes
+
+    ### Set global plot window parameters
+    max_point_size = mps #diameter in points
+
+    if axrange:
+        B = np.array([])
+        TT  = np.array([])
+        for val in data.values():
+            B = np.append(B,val['beam'])
+            TT  = np.append(TT,val['time'])
+
+        if duration != None:
+            ax.set_xlim(0.,duration) #duration in seconds
+        else:
+            ax.set_xlim(0.,TT.max()*1.05)
+        ax.set_ylim(1.,B.max()*1.05)
+
+    if axlabel == True:
+        ax.set_xlabel('$\\rm Time\; (sec)$', size=12)
+        ax.set_ylabel('$\\rm Beam\;(pc\;cm^{-3})$', size=12)
+    else:
+        ax.tick_params(axis='x', labelbottom=False)
+
+    # Set ticks and grid
+    ax.grid(axis='y', which='both', linewidth=0.2)
+    ax.set_axisbelow(True)
+    yformat = plt.FormatStrFormatter('%i')
+    ax.yaxis.set_major_formatter(yformat)
+
+    # Plot data
+    if (len(data['noise']['snr']) > 0):
+        clipped_snr = np.clip(data['noise']['snr'],0.,snr_thr)
+        norm_snr    = (clipped_snr-snr_cut)/(snr_thr-snr_cut)
+        ax.scatter(data['noise']['time'],data['noise']['beam'], \
+                   s=(max_point_size*norm_snr)**2, \
+                   c='dimgray', alpha=0.5, marker='x', picker=5)
+
+    if (len(data['coinc']['snr']) > 0):
+        clipped_snr = np.clip(data['coinc']['snr'],0.,snr_thr)
+        norm_snr    = (clipped_snr-snr_cut)/(snr_thr-snr_cut)
+        ax.scatter(data['coinc']['time'],data['coinc']['beam'], \
+                   s=(max_point_size*norm_snr)**2, \
+                   c='slategrey', alpha=0.5, marker='+', picker=5)
+
+    if (len(data['wrong_width']['snr']) > 0):
+        clipped_snr = np.clip(data['wrong_width']['snr'],0.,snr_thr)
+        norm_snr    = (clipped_snr-snr_cut)/(snr_thr-snr_cut)
+        ax.scatter(data['wrong_width']['time'],data['wrong_width']['beam'], \
+                   s=(max_point_size*norm_snr)**2, \
+                   c=data['wrong_width']['filter'], cmap='viridis', \
+                   vmin=0., vmax=12, alpha=0.25, marker='s', picker=5)
+
+        if multibeam:
+            for idx,time in enumerate(data['wrong_width']['time']):
+                ax.text(time,data['wrong_width']['beam'][idx], \
+                        data['wrong_width']['prim_beam'][idx].astype('str'), \
+                        horizontalalignment='center', verticalalignment='center', \
+                        size=6, color='dimgray', alpha=0.5)
+
+    if (len(data['valid']['snr']) > 0):
+        clipped_snr = np.clip(data['valid']['snr'],0.,snr_thr)
+        norm_snr    = (clipped_snr-snr_cut)/(snr_thr-snr_cut)
+        ax.scatter(data['valid']['time'],data['valid']['beam'], \
+                   s=(max_point_size*norm_snr)**2, \
+                   c=data['valid']['filter'], cmap='viridis', \
+                   vmin=0., vmax=12, marker='o', picker=5)
+
+        if multibeam:
+            for idx,time in enumerate(data['valid']['time']):
+                ax.text(time,data['valid']['beam'][idx], \
+                        data['valid']['prim_beam'][idx].astype('str'), size=6, \
+                        horizontalalignment='center', verticalalignment='center')
