@@ -296,7 +296,7 @@ def TimeBeamPlot(ax,data,duration=None,snr_cut=6.5,snr_thr=25.,mps=30.,multibeam
 
     if axlabel == True:
         ax.set_xlabel('$\\rm Time\; (sec)$', size=12)
-        ax.set_ylabel('$\\rm Beam\;(pc\;cm^{-3})$', size=12)
+        ax.set_ylabel('$\\rm Beam Number$', size=12)
     else:
         ax.tick_params(axis='x', labelbottom=False)
 

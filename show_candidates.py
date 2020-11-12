@@ -65,8 +65,10 @@ class CandBrowser(object):
         if self.interactive:
             plt.show()
         else:
-            print(f'Saving plot at {self.Fcands[0]}.png')
-            plt.savefig(os.path.join(os.path.basename(self.Fcands[0]) + ".png"))
+            path = os.path.join(os.path.abspath(os.getcwd() + "\\" + os.path.basename(self.Fcands[0])))
+            print(f'Saving plot at {path}.png')
+            #plt.savefig(os.path.join(os.path.basename(self.Fcands[0]) + ".png"))
+            plt.savefig(path + '.png')
 
     def activate_picking(self):
         # Activate interactive picking and buttonsm
@@ -83,22 +85,13 @@ class CandBrowser(object):
 
         # If a directory path is given enable pointing scrolling
         if os.path.isdir(self.Pcand):
-            print("Here:",self.Pcand)
-            #self.Pcand = 'test_cands/Z023.5-01.7/57286/all_cand'
-            #self.Pcand = 'C:\\Users\\Mirabai\ Smoot\\Desktop\\DSA\\heim_cand_plotter\\test_cands\\Z023.5-01.7\\57286\\all_cand'
-            #NOTE: this assumes a dir structure of <pointing name>/<MJD>/<cand dirs>
-            # paths = sorted(subprocess.check_output(['find', self.Pcand, \
-            #                '-mindepth', '1', '-type', 'd'], encoding='ascii').split())
-            #paths = os.listdir(self.Pcand)
             paths = glob.glob(self.Pcand + '\*')
-            print("len(paths):",len(paths))
 
             if len(paths) != 0:
                 self.Pcand = paths[-1]
 
             Ppointing  = self.Pcand.split(self.Pcand.split('/')[-1])[0]
             Ppointing  = os.path.abspath(Ppointing)
-            print("Ppointing:",Ppointing)
             Ppointings = glob.glob(Ppointing+'\..\*') #I took off one \..
             # Ppointings = sorted(subprocess.check_output(['find', Ppointing+'/../..', \
             #                '-mindepth', '2', '-maxdepth', '2', '-type', 'd'], encoding='ascii').split())

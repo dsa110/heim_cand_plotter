@@ -173,7 +173,6 @@ class TextOutput(object):
 
 
 def load_candidates(filename, verbose=False):
-    print("in load_candidates, filename =",filename)
     if os.path.getsize(filename) > 0:
         try:
             # multibeam test data
