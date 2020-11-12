@@ -326,6 +326,8 @@ class CandBrowser(object):
                                                      color='yellow', visible=False)
             self.selected_dmt,   = self.dm_t_ax[0].plot([0],[0], 'o', ms=12, alpha=0.4, \
                                                      color='yellow', visible=False)
+            self.selected_beamt,   = self.bm_t_ax[0].plot([0],[0], 'o', ms=12, alpha=0.4, \
+                                                     color='yellow', visible=False)
 
         # With informative text
         initial_text = 'Click on a candidate\nto get its parameters'
@@ -573,7 +575,13 @@ class CandBrowser(object):
             try:
                 cand_id = self.snr_dm_ax.index(event.mouseevent.inaxes)
             except:
-                return True
+                try:
+                    cand_id = self.bm_t_ax.index(event.mouseevent.inaxes)
+                except:
+                    return True
+                else:
+                    xis = 'time'
+                    yis = 'beam'
             else:
                 if self.Pointscroll:
                     xis = 'snr'
@@ -619,8 +627,11 @@ class CandBrowser(object):
         if self.Fcoincedcand or not self.Pointscroll:
             self.selected_snrdm.set_visible(True)
             self.selected_dmt.set_visible(True)
+            self.selected_beamt.set_visible(True)
             self.selected_dmt.set_data(self.cands[self.cand_idx[0]]['time'][self.cand_idx[1]], \
                                        self.cands[self.cand_idx[0]]['dm'][self.cand_idx[1]])
+            self.selected_beamt.set_data(self.cands[self.cand_idx[0]]['time'][self.cand_idx[1]], \
+                                       self.cands[self.cand_idx[0]]['beam'][self.cand_idx[1]])
             if self.Pointscroll:
                 self.selected_snrdm.set_data(self.cands[self.cand_idx[0]]['snr'][self.cand_idx[1]], \
                                              self.cands[self.cand_idx[0]]['dm'][self.cand_idx[1]])
