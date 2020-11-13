@@ -65,9 +65,8 @@ class CandBrowser(object):
         if self.interactive:
             plt.show()
         else:
-            path = os.path.join(os.path.abspath(os.getcwd() + "\\" + os.path.basename(self.Fcands[0])))
+            path = os.path.join(os.path.abspath(os.getcwd() + "/saved_plots/" + os.path.basename(self.Fcands[0])))
             print(f'Saving plot at {path}.png')
-            #plt.savefig(os.path.join(os.path.basename(self.Fcands[0]) + ".png"))
             plt.savefig(path + '.png')
 
     def activate_picking(self):
@@ -635,6 +634,7 @@ class CandBrowser(object):
             norm_snr    = (clipped_snr-self.snr_cut)/(self.snr_thr-self.snr_cut)
             self.selected_snrdm.set_markersize(np.sqrt(20)*2.)
             self.selected_dmt.set_markersize(self.mps*norm_snr*1.5)
+            self.selected_beamt.set_markersize(self.mps*norm_snr*1.5)
 
         # Draw selection lines in multibeam plots
         if self.Pointscroll:
