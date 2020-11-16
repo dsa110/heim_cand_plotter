@@ -34,7 +34,7 @@ class CandBrowser(object):
     https://matplotlib.org/examples/event_handling/data_browser.html
     """
 
-    def __init__(self,Pcand,Pfil=None,waterfall=False,verbose=False,interactive=False):
+    def __init__(self,Pcand,verbose=False,interactive=False):
         """
         Constructor to build plot and take care of
         dynamic repopulation of plots.
@@ -50,8 +50,6 @@ class CandBrowser(object):
 
         # Dynamic settings:
         self.Pcand = Pcand
-        self.Pfil  = Pfil
-        self.waterfall = waterfall
         self.verbose   = verbose
         self.interactive = interactive
 
@@ -73,53 +71,19 @@ class CandBrowser(object):
         # Activate interactive picking and buttonsm
         self.fig.canvas.mpl_connect('pick_event', self.onpick)
         self.fig.canvas.mpl_connect('key_press_event', self.onpress)
-        if self.waterfall:
-            self.dm_button.on_clicked(self.onclick_check_dm)
-            self.wf_button.on_clicked(self.onclick_check_downsamp_plots)
-            self.wf0_button.on_clicked(self.onclick_check_downsamp_dm0_plots)
 
     def load_data(self):
-        ### Get data path
+        # Get data path
         self.Pcand = os.path.abspath(self.Pcand)
+        print(f'Using file {self.Pcand}')
+        self.Fcands = self.Pcand
+        self.Pcand  = self.Pcand.split(self.Pcand.split('/')[-1])[0]
 
-        # If a directory path is given enable pointing scrolling
-        if os.path.isdir(self.Pcand):
-            paths = glob.glob(self.Pcand + '\*')
-
-            if len(paths) != 0:
-                self.Pcand = paths[-1]
-
-            Ppointing  = self.Pcand.split(self.Pcand.split('/')[-1])[0]
-            Ppointing  = os.path.abspath(Ppointing)
-            Ppointings = glob.glob(Ppointing+'\..\*') #I took off one \..
-            # Ppointings = sorted(subprocess.check_output(['find', Ppointing+'/../..', \
-            #                '-mindepth', '2', '-maxdepth', '2', '-type', 'd'], encoding='ascii').split())
-            self.Ppointings = [os.path.abspath(path) for path in Ppointings]
-            self.Pointscroll = True
-            self.Fcandsind = self.Ppointings.index(Ppointing)
-
-        # If a file path is given enable beam scrolling
-        elif os.path.isfile(self.Pcand):
-            print(f'Using file {self.Pcand}')
-            self.Fcands = self.Pcand
-            self.Pcand  = self.Pcand.split(self.Pcand.split('\\')[-1])[0]
-            self.Pointscroll = False
-
-        # Get candidate and filterbank files
+        # Get candidate file
         self.get_files()
 
     def get_files(self):
-        if not self.Pointscroll: #if given single file
-            Fcand = self.Fcands
-            self.Fcands = [self.Fcands]
-        else:
-            self.Fcands = glob.glob(self.Pcand + '\..\*')
-
-        ### Get candidate files
-        # self.Fcands = sorted(subprocess.check_output(['find', self.Pcand, \
-        #                            '-maxdepth', '1', '-type', 'f',\
-        #                            '-name', str("*.cand")], encoding='ascii').split())
-        #self.Fcands = [self.Fcands] #if single file
+        self.Fcands = [self.Fcands]
 
         if len(self.Fcands) == 0:
             raise ValueError("Could not find .cand files in %s" % self.Pcand)
@@ -127,44 +91,7 @@ class CandBrowser(object):
             self.Fcoincedcand = False
             self.NFcands = len(self.Fcands)
 
-            #NOTE: this is for distinguishing between coincidenced and noncoincidenced files
-            #NOTE: this assumes a file name of <date>-<time>_<beam number>_<something>.cand
-            if self.Pointscroll:
-                self.beam_num = [x.split('_')[-2] for x in self.Fcands]
-                try:
-                    #NOTE: this assumes the coincidenced candidate file has a file name of <date>-<time>_coinced_<something>.cand
-                    coinced_idx = self.beam_num.index('coinced')
-                except ValueError:
-                    print("\n    WARNING: coincidencer's .cand file could not be found!\n")
-                    self.Fcoincedcand = False
-                    self.NFcands = len(self.Fcands)
-                else:
-                    self.Fcoincedcand = True
-                    Fcoinced = self.Fcands[coinced_idx]
-                    del self.Fcands[coinced_idx]
-                    del self.beam_num[coinced_idx]
-                    self.NFcands = len(self.Fcands)
-                    self.Fcands.insert(0,Fcoinced)
-                    self.beam_num.insert(0,'coinced')
-
-        if not self.Pointscroll:
-            self.Fcandsind = self.Fcands.index(Fcand)
-
-        ### Get corresponding filterbank files
-        if self.waterfall == True:
-            if self.Pfil is None:
-                #NOTE: this assumes the filterbank files to be located in the MJD folder along with all candidate dirs
-                Pfil = os.path.abspath(self.Pcand+'/../')
-            elif os.path.isfile(self.Pfil):
-                Pfil  = self.Pfil.split(self.Pfil.split('/')[-1])[0]
-            else:
-                Pfil = os.path.abspath(self.Pfil)
-
-            self.Ffils = sorted(subprocess.check_output(['find', Pfil, \
-                                            '-maxdepth', '1', '-type', 'f',\
-                                            '-name', str("*.fil")], encoding='ascii').split())
-            if len(self.Ffils) == 0:
-                raise ValueError("Could not find .fil files in %s" % self.Pfil)
+        self.Fcandsind = self.Fcands.index(self.Fcands[0])
 
     def get_cands_shift(self):
         classifier = CC(*self.classify_args)
@@ -172,24 +99,17 @@ class CandBrowser(object):
         self.multibeam = []
         self.categories = []
         for Fcand in self.Fcands:
-            cs,mb = LC(Fcand,self.verbose)
+            cs = LC(Fcand,self.verbose)
             self.cands.append(cs)
-            self.multibeam.append(mb)
-            self.categories.append(classifier.categories(cs,mb,self.verbose))
+            self.multibeam.append(False)
+            self.categories.append(classifier.categories(cs,self.verbose))
 
     def setup_figure(self):
         if not self.interactive:
             use('Agg')
 
-        if self.Pointscroll:
-            self.fig = plt.figure(figsize=(8.3,11.7)) #A4 portrait
-            #https://matplotlib.org/api/_as_gen/matplotlib.pyplot.subplots_adjust.html
-            self.fig.subplots_adjust(bottom=0.05, top=0.95, hspace=0.1)
-            self.fig_multi_cands()
-        else:
-            self.fig = plt.figure(figsize=(11.7,8.3)) #A4 landscape
-            self.fig_single_cand()
-
+        self.fig = plt.figure(figsize=(11.7,8.3)) #A4 landscape
+        self.fig_single_cand()
 
     def fig_single_cand(self):
         #Build cand info plots
@@ -204,121 +124,27 @@ class CandBrowser(object):
 
         #Build text and buttons
         self.text_ax        = self.fig.add_subplot(gs[:-4,2])
-        if self.waterfall:
-            self.dm_box     = self.fig.add_subplot(gs[-3,2])
-            self.dm_button  = Button(self.dm_box, 'Check DM')
-            self.wf_box     = self.fig.add_subplot(gs[-2,2])
-            self.wf_button  = Button(self.wf_box, 'Waterfall')
-            self.wf0_box    = self.fig.add_subplot(gs[-1,2])
-            self.wf0_button = Button(self.wf0_box, 'Waterfall DM=0')
-
-    def fig_multi_cands(self):
-        gs = self.fig.add_gridspec(ncols=9, nrows=np.clip(self.NFcands+2,9,15))
-
-        ### Build cand info plots
-        self.dm_t_ax   = []
-        self.num_dm_ax = []
-        self.snr_dm_ax = []
-
-        # Build dm_t axis for coincidenced beams
-        if self.Fcoincedcand:
-            self.dm_t_ax.append(self.fig.add_subplot(gs[:2,:6]))
-            self.snr_dm_ax.append(self.fig.add_subplot(gs[:2,6:], sharey=self.dm_t_ax[0]))
-            divider = make_axes_locatable(self.snr_dm_ax[-1])
-            self.cbar_ax = divider.append_axes("right", size="5%", pad=0.1)
-            self.num_dm_ax.append(0)
-
-        # Build dm_t axis for all beams
-            for idx in range(2,self.NFcands+2):
-                self.dm_t_ax.append(self.fig.add_subplot(gs[idx,:6], sharex=self.dm_t_ax[0], sharey=self.dm_t_ax[0]))
-                self.num_dm_ax.append(self.fig.add_subplot(gs[idx,6], sharey=self.dm_t_ax[0]))
-
-        else:
-            self.dm_t_ax.append(self.fig.add_subplot(gs[2,:6]))
-            self.num_dm_ax.append(self.fig.add_subplot(gs[2,6], sharey=self.dm_t_ax[0]))
-
-            for idx in range(3,self.NFcands+2):
-                self.dm_t_ax.append(self.fig.add_subplot(gs[idx,:6], sharex=self.dm_t_ax[0], sharey=self.dm_t_ax[0]))
-                self.num_dm_ax.append(self.fig.add_subplot(gs[idx,6], sharey=self.dm_t_ax[0]))
-
-        ### Build text and buttons
-        self.text_ax        = self.fig.add_subplot(gs[2:-3,7:])
-        if self.waterfall:
-            self.dm_box     = self.fig.add_subplot(gs[-3,7:])
-            self.dm_button  = Button(self.dm_box, 'Check DM')
-            self.wf_box     = self.fig.add_subplot(gs[-2,7:])
-            self.wf_button  = Button(self.wf_box, 'Waterfall')
-            self.wf0_box    = self.fig.add_subplot(gs[-1,7:])
-            self.wf0_button = Button(self.wf0_box, 'Waterfall DM=0')
 
     def populate_axis(self):
-        #if plotting a directory instead of a specific file
-        if self.Pointscroll:
-            axrange = True
-            for axnum,ax in enumerate(self.dm_t_ax):
-                if not all(len(x)==0 for x in self.categories[axnum].values()):
-                    pf.TimeDMPlot(self.dm_t_ax[axnum], self.categories[axnum], self.duration, self.snr_cut, \
-                                  self.snr_thr, self.mps, self.multibeam[axnum], axrange, False)
-
-                    if (axnum == 0) and self.Fcoincedcand:
-                        pf.DMSNRPlot_multibeams(self.snr_dm_ax[axnum], self.cbar_ax, self.categories[axnum], self.tsamp)
-                    else:
-                        pf.DMHistPlot_multibeams(self.num_dm_ax[axnum], self.cands[axnum], self.nbins)
-                else:
-                    self.num_dm_ax[axnum].tick_params(axis='y', labelleft=False)
-                    self.num_dm_ax[axnum].tick_params(axis='x', bottom=False, labelbottom=False)
-
-                if (axnum == 0) and self.Fcoincedcand:
-                    ax.set_ylabel('$\\rm DM\;(pc\;cm^{-3})$', size=12)
-                else:
-                    ax.set_ylabel(int(self.beam_num[axnum])-1, size=12,rotation=0)
-
-                if axnum == 0:
-                    axrange = False
-
-                if ax == self.dm_t_ax[-1]:
-                    ax.set_xlabel('$\\rm Time\; (sec)$', size=12)
-                    ax.tick_params(axis='x', labelbottom=True)
-
-            #https://jakevdp.github.io/PythonDataScienceHandbook/04.10-customizing-ticks.html
-            self.dm_t_ax[0].yaxis.set_major_locator(plt.LogLocator())
-            self.dm_t_ax[0].minorticks_on()
+        if len(self.cands[self.Fcandsind]) == 0:
+            self.num_dm_ax[0].cla()
+            self.snr_dm_ax[0].cla()
+            self.dm_t_ax[0].cla()
+            self.bm_t_ax[0].cla()
         else:
-            if len(self.cands[self.Fcandsind]) == 0:
-                self.num_dm_ax[0].cla()
-                self.snr_dm_ax[0].cla()
-                self.dm_t_ax[0].cla()
-                self.bm_t_ax[0].cla()
-            else:
-                pf.DMHistPlot(self.num_dm_ax[0], self.cands[self.Fcandsind], self.nbins, self.multibeam[self.Fcandsind])
-                pf.DMSNRPlot(self.snr_dm_ax[0], self.cbar_ax, self.categories[self.Fcandsind],self.tsamp)
-                pf.TimeDMPlot(self.dm_t_ax[0], self.categories[self.Fcandsind], self.duration, self.snr_cut, \
+            pf.DMHistPlot(self.num_dm_ax[0], self.cands[self.Fcandsind], self.nbins, self.multibeam[self.Fcandsind])
+            pf.DMSNRPlot(self.snr_dm_ax[0], self.cbar_ax, self.categories[self.Fcandsind],self.tsamp)
+            pf.TimeDMPlot(self.dm_t_ax[0], self.categories[self.Fcandsind], self.duration, self.snr_cut, \
                              self.snr_thr, self.mps, self.multibeam[self.Fcandsind])
-                pf.TimeBeamPlot(self.bm_t_ax[0], self.categories[self.Fcandsind], self.duration, self.snr_cut, \
+            pf.TimeBeamPlot(self.bm_t_ax[0], self.categories[self.Fcandsind], self.duration, self.snr_cut, \
                              self.snr_thr, self.mps, self.multibeam[self.Fcandsind])
 
-        # With selection highlights
-        if self.Pointscroll:
-            self.selected_dmt_hlines = []
-            self.selected_dmt_vlines = []
 
-            if self.Fcoincedcand:
-                min_range = 1
-                select_circ = True
-            else:
-                min_range = 0
-                select_circ = False
-
-            for axnum in range(min_range,len(self.dm_t_ax)):
-                self.selected_dmt_hlines.append(self.dm_t_ax[axnum].axhline(color='r', linewidth=0.3, zorder=0, visible=False))
-                self.selected_dmt_vlines.append(self.dm_t_ax[axnum].axvline(color='r', linewidth=0.3, zorder=0, visible=False))
-
-        if not self.Pointscroll or select_circ:
-            self.selected_snrdm, = self.snr_dm_ax[0].plot([0],[0], 'o', ms=12, alpha=0.4, \
+        self.selected_snrdm, = self.snr_dm_ax[0].plot([0],[0], 'o', ms=12, alpha=0.4, \
                                                      color='yellow', visible=False)
-            self.selected_dmt,   = self.dm_t_ax[0].plot([0],[0], 'o', ms=12, alpha=0.4, \
+        self.selected_dmt,   = self.dm_t_ax[0].plot([0],[0], 'o', ms=12, alpha=0.4, \
                                                      color='yellow', visible=False)
-            self.selected_beamt,   = self.bm_t_ax[0].plot([0],[0], 'o', ms=12, alpha=0.4, \
+        self.selected_beamt,   = self.bm_t_ax[0].plot([0],[0], 'o', ms=12, alpha=0.4, \
                                                      color='yellow', visible=False)
 
         # With informative text
@@ -327,27 +153,18 @@ class CandBrowser(object):
         self.text_ax.axis("off")
         self.text = self.text_ax.text(0.,0.,initial_text, \
                           size=10, transform=self.text_ax.transAxes)
-        if self.Pointscroll:
-            pointing = self.Ppointings[self.Fcandsind].split('\\')[-2]+'/'+self.Ppointings[self.Fcandsind].split('/')[-1]
-            self.text_ax.text(1.1,0.55,"Loaded pointing:\n%s" \
-                % pointing, fontsize=14, rotation=-90, transform=self.text_ax.transAxes)
-        else:
-            self.text_ax.text(1.1,0.25,"Loaded candidate file:\n%s" \
+        self.text_ax.text(1.1,0.25,"Loaded candidate file:\n%s" \
                 % (self.Fcands[self.Fcandsind].split('/')[-1]), fontsize=14, \
                 rotation=-90, transform=self.text_ax.transAxes)
 
     def gentextinfo(self):
         infostr  = 'Selected candidate:\n\n'
+        infostr += 'Beam  = %i\n' % self.cands[self.cand_idx[0]]['beam'][self.cand_idx[1]]
         infostr += 'SNR   = %.3f\n' % self.cands[self.cand_idx[0]]['snr'][self.cand_idx[1]]
         infostr += 'DM    = %.3f ($pc\,cm^{-3}$)\n' % self.cands[self.cand_idx[0]]['dm'][self.cand_idx[1]]
         infostr += 'Time  = %.3f (sec)\n' % self.cands[self.cand_idx[0]]['time'][self.cand_idx[1]]
         infostr += 'Width = %.3f (ms)\n' % (2.**self.cands[self.cand_idx[0]]['filter'][self.cand_idx[1]] * self.tsamp*1000.)
         #infostr += 'Mem  = %d\n' % self.cands[self.cand_idx[0]]['members'][self.cand_idx[1]]
-        if self.multibeam[self.cand_idx[0]]:
-            infostr += "Beam = %d" % self.cands[self.cand_idx[0]]['beam'][self.cand_idx[1]]
-        else:
-            pass
-            #infostr += "Beam = %d" % (int(self.beam_num[self.cand_idx[0]]) - 1) #Correct for zero based beam numbering
 
         return infostr
 
@@ -547,12 +364,7 @@ class CandBrowser(object):
             inc = -1
 
         self.Fcandsind += inc
-        if self.Pointscroll:
-            self.Fcandsind = np.clip(self.Fcandsind, 0, len(self.Ppointings) - 1)
-            self.Pcand = sorted(subprocess.check_output(['find', self.Ppointings[self.Fcandsind], \
-                                '-mindepth', '1', '-type', 'd'], encoding='ascii').split())[-1]
-        else:
-            self.Fcandsind = np.clip(self.Fcandsind, 0, len(self.Fcands) - 1)
+        self.Fcandsind = np.clip(self.Fcandsind, 0, len(self.Fcands) - 1)
         self.reload()
 
     def onpick(self, event):
@@ -575,12 +387,8 @@ class CandBrowser(object):
                     xis = 'time'
                     yis = 'beam'
             else:
-                if self.Pointscroll:
-                    xis = 'snr'
-                    yis = 'dm'
-                else:
-                    xis = 'dm'
-                    yis = 'snr'
+                xis = 'dm'
+                yis = 'snr'
         except:
             return True
         else:
@@ -591,8 +399,7 @@ class CandBrowser(object):
         x = event.mouseevent.xdata
         y = event.mouseevent.ydata
 
-        if not self.Pointscroll:
-            cand_id = self.Fcandsind
+        cand_id = self.Fcandsind
 
         # Find nearest candidate in plot
         distances = np.hypot(x - self.cands[cand_id][xis], y - self.cands[cand_id][yis])
@@ -601,48 +408,25 @@ class CandBrowser(object):
         self.update()
 
     def reload(self):
-        if self.Pointscroll:
-            old_fig = self.fig
-            self.get_files()
-            self.get_cands_shift()
-            self.setup_figure()
-            self.populate_axis()
-            self.activate_picking()
-            self.fig.show()
-            plt.close(old_fig)
-        else:
-            self.populate_axis()
-            self.fig.canvas.draw()
+        self.populate_axis()
+        self.fig.canvas.draw()
 
     def update(self):
         # Set selection highlights
-        if self.Fcoincedcand or not self.Pointscroll:
-            self.selected_snrdm.set_visible(True)
-            self.selected_dmt.set_visible(True)
-            self.selected_beamt.set_visible(True)
-            self.selected_dmt.set_data(self.cands[self.cand_idx[0]]['time'][self.cand_idx[1]], \
+        self.selected_snrdm.set_visible(True)
+        self.selected_dmt.set_visible(True)
+        self.selected_beamt.set_visible(True)
+        self.selected_dmt.set_data(self.cands[self.cand_idx[0]]['time'][self.cand_idx[1]], \
                                        self.cands[self.cand_idx[0]]['dm'][self.cand_idx[1]])
-            self.selected_beamt.set_data(self.cands[self.cand_idx[0]]['time'][self.cand_idx[1]], \
+        self.selected_beamt.set_data(self.cands[self.cand_idx[0]]['time'][self.cand_idx[1]], \
                                        self.cands[self.cand_idx[0]]['beam'][self.cand_idx[1]])
-            if self.Pointscroll:
-                self.selected_snrdm.set_data(self.cands[self.cand_idx[0]]['snr'][self.cand_idx[1]], \
-                                             self.cands[self.cand_idx[0]]['dm'][self.cand_idx[1]])
-            else:
-                self.selected_snrdm.set_data(self.cands[self.cand_idx[0]]['dm'][self.cand_idx[1]], \
+        self.selected_snrdm.set_data(self.cands[self.cand_idx[0]]['dm'][self.cand_idx[1]], \
                                              self.cands[self.cand_idx[0]]['snr'][self.cand_idx[1]])
-            clipped_snr = np.clip(self.cands[self.cand_idx[0]]['snr'][self.cand_idx[1]],0.,self.snr_thr)
-            norm_snr    = (clipped_snr-self.snr_cut)/(self.snr_thr-self.snr_cut)
-            self.selected_snrdm.set_markersize(np.sqrt(20)*2.)
-            self.selected_dmt.set_markersize(self.mps*norm_snr*1.5)
-            self.selected_beamt.set_markersize(self.mps*norm_snr*1.5)
-
-        # Draw selection lines in multibeam plots
-        if self.Pointscroll:
-            for ax_id in range(0,len(self.selected_dmt_hlines)):
-                self.selected_dmt_hlines[ax_id].set_visible(True)
-                self.selected_dmt_hlines[ax_id].set_ydata(self.cands[self.cand_idx[0]]['dm'][self.cand_idx[1]])
-                self.selected_dmt_vlines[ax_id].set_visible(True)
-                self.selected_dmt_vlines[ax_id].set_xdata(self.cands[self.cand_idx[0]]['time'][self.cand_idx[1]])
+        clipped_snr = np.clip(self.cands[self.cand_idx[0]]['snr'][self.cand_idx[1]],0.,self.snr_thr)
+        norm_snr    = (clipped_snr-self.snr_cut)/(self.snr_thr-self.snr_cut)
+        self.selected_snrdm.set_markersize(np.sqrt(20)*2.)
+        self.selected_dmt.set_markersize(self.mps*norm_snr*1.5)
+        self.selected_beamt.set_markersize(self.mps*norm_snr*1.5)
 
         # Set informative text
         self.text.set_text(self.gentextinfo())
@@ -655,10 +439,6 @@ if __name__ == '__main__':
 
     parser.add_argument('cand_path', \
             help="Path to candidate file or folder.")
-    parser.add_argument('-f','--fil_path', type=str, default=None, \
-            help="Path to filterbank file or folder.")
-    parser.add_argument('-w','--waterfall', action='store_true', default=False, \
-            help="Enable filterbank plot tools. If True & 'fil_path' = None the later defaults to '../'.")
     parser.add_argument('-v', '--verbose', action='store_true', default=False, \
             help="Print more operation details")
     parser.add_argument('-i', '--interactive', action='store_true', default=False, \
@@ -706,7 +486,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    CB = CandBrowser(args.cand_path,args.fil_path,args.waterfall,args.verbose,args.interactive)
+    CB = CandBrowser(args.cand_path,args.verbose,args.interactive)
     CB.nbins    = args.nbins
     CB.tsamp    = args.tsamp
     CB.snr_cut  = args.snr_cut

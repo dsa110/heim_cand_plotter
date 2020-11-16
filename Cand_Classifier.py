@@ -57,7 +57,7 @@ class Cand_Classifier(object):
     def is_coinc_rfi(self, cand):
         return cand['beam_mask'] > 2**16
 
-    def categories(self, cand, multibeam, verbose=False):
+    def categories(self, cand, verbose=False):
         # Filter candidates based on classifications
         if verbose:
             print("Classifying candidates...\n")
@@ -65,11 +65,6 @@ class Cand_Classifier(object):
         is_hidden = self.is_too_dim(cand)
         is_noise  = (is_hidden==False) & (self.is_noise(cand) | self.is_lowdm_rfi(cand))
         is_coinc  = np.full(len(is_hidden),False)
-
-        if multibeam:
-            is_hidden = is_hidden | self.is_hidden(cand)
-            is_noise  = (is_hidden==False) & (is_noise  | self.is_coinc_rfi(cand))
-            is_coinc  = (is_hidden==False) & (is_noise ==False) & self.is_coincident(cand)
 
         is_wrong_width = (is_hidden==False) & (is_noise ==False) & (is_coinc ==False) & (self.is_too_fat(cand) | self.is_too_narrow(cand))
         is_valid  = (is_hidden==False) & (is_noise ==False) & (is_coinc ==False) & (is_wrong_width ==False)
@@ -92,61 +87,36 @@ class Cand_Classifier(object):
 
 class TextOutput(object):
     def __init__(self, multibeam=False):
-        self.multibeam = multibeam
+        self.multibeam = False
 
     def print_html(self, data, names):
         for cat in names:
             print("\n%s candidates:" % cat)
             if len(data[cat]) > 0:
                 sys.stdout.write("<table width='100%' border=1 cellpadding=4px cellspacing=4px>\n")
-                if self.multibeam:
-                    sys.stdout.write("<tr><th align=left>SNR</th><th align=left>Time</th><th align=left>DM</th><th align=left>Filter [ms]</th><th align=left>Beam</th></tr>\n")
-                else:
-                    sys.stdout.write("<tr><th align=left>SNR</th><th align=left>Time</th><th align=left>DM</th><th align=left>Filter [ms]</th></tr>\n")
+                sys.stdout.write("<tr><th align=left>SNR</th><th align=left>Time</th><th align=left>DM</th><th align=left>Filter [ms]</th></tr>\n")
 
                 for (i, item) in enumerate(data[cat]['snr']):
-                    if self.multibeam:
-                        sys.stdout.write ("<tr>" + \
-                                          "<td>" + str(data[cat]['snr'][i]) + "</td>" + \
-                                          "<td>" + str(data[cat]['time'][i]) + "</td>" + \
-                                          "<td>" + str(data[cat]['dm'][i]) + "</td>" + \
-                                          "<td>" + str(0.064 * (2 **data[cat]['filter'][i])) + "</td>" + \
-                                          "<td>" + str(data[cat]['prim_beam'][i]) + "</td>" + \
-                                          "</tr>\n")
-                    else:
-                        sys.stdout.write ("<tr>" + \
-                                          "<td>" + str(data[cat]['snr'][i]) + "</td>" + \
-                                          "<td>" + str(data[cat]['time'][i]) + "</td>" + \
-                                          "<td>" + str(data[cat]['dm'][i]) + "</td>" + \
-                                          "<td>" + str(0.064 * (2 **data[cat]['filter'][i])) + "</td>" + \
-                                          "</tr>\n")
+                    sys.stdout.write ("<tr>" + \
+                                      "<td>" + str(data[cat]['snr'][i]) + "</td>" + \
+                                      "<td>" + str(data[cat]['time'][i]) + "</td>" + \
+                                      "<td>" + str(data[cat]['dm'][i]) + "</td>" + \
+                                      "<td>" + str(0.064 * (2 **data[cat]['filter'][i])) + "</td>" + \
+                                      "</tr>\n")
                 sys.stdout.write("</table>\n")
 
     def print_text(self, data, names):
         for cat in names:
             print("\n%s candidates:" % cat)
             if len(data[cat]) > 0:
-                if self.multibeam:
-                    sys.stdout.write ("%-10s %-10s %-10s %-10s %-10s %-10s\n" \
-                                       % ('snr', 'time', 'samp_idx', 'dm', \
-                                          'filter', 'prime_beam'))
-                else:
-                    sys.stdout.write ("%-10s %-10s %-10s %-10s %-10s\n" \
+                sys.stdout.write ("%-10s %-10s %-10s %-10s %-10s\n" \
                                        % ('snr', 'time', 'samp_idx', 'dm', 'filter'))
                 for (i, item) in enumerate(data[cat]['snr']):
-                    if self.multibeam:
-                        sys.stdout.write ("%-10s " % data[cat]['snr'][i] + \
-                                          "%-10s " % data[cat]['time'][i] + \
-                                          "%-10s " % data[cat]['samp_idx'][i] + \
-                                          "%-10s " % data[cat]['dm'][i] + \
-                                          "%-10s " % data[cat]['filter'][i] + \
-                                          "%-10s " % data[cat]['prim_beam'][i] + "\n")
-                    else:
-                        sys.stdout.write ("%-10s " % data[cat]['snr'][i] + \
-                                          "%-10s " % data[cat]['time'][i] + \
-                                          "%-10s " % data[cat]['samp_idx'][i] + \
-                                          "%-10s " % data[cat]['dm'][i] + \
-                                          "%-10s " % data[cat]['filter'][i] + "\n")
+                    sys.stdout.write ("%-10s " % data[cat]['snr'][i] + \
+                                      "%-10s " % data[cat]['time'][i] + \
+                                      "%-10s " % data[cat]['samp_idx'][i] + \
+                                      "%-10s " % data[cat]['dm'][i] + \
+                                      "%-10s " % data[cat]['filter'][i] + "\n")
 
     def print_xml(self, data, names):
         for cat in names:
@@ -157,67 +127,37 @@ class TextOutput(object):
             cand_i = 0
             for i in snr_sorted_indices:
                 cand_i += 1
-                if self.multibeam:
-                    sys.stdout.write ("<candidate snr='" + str(data[cat]['snr'][i]) + \
-                                               "' time='" + str(data[cat]['time'][i]) + \
-                                               "' dm='" + str(data[cat]['dm'][i]) + \
-                                               "' samp_idx='" + str(data[cat]['samp_idx'][i]) + \
-                                               "' filter='" + str(data[cat]['filter'][i]) + \
-                                               "' prim_beam='" + str(data[cat]['prim_beam'][i] + 1) + "'/>\n")
-                else:
-                    sys.stdout.write ("<candidate snr='" + str(data[cat]['snr'][i]) + \
-                                               "' time='" + str(data[cat]['time'][i]) + \
-                                               "' dm='" + str(data[cat]['dm'][i]) + \
-                                               "' samp_idx='" + str(data[cat]['samp_idx'][i]) + \
-                                               "' filter='" + str(data[cat]['filter'][i]) + "'/>\n")
+                sys.stdout.write ("<candidate snr='" + str(data[cat]['snr'][i]) + \
+                                           "' time='" + str(data[cat]['time'][i]) + \
+                                           "' dm='" + str(data[cat]['dm'][i]) + \
+                                           "' samp_idx='" + str(data[cat]['samp_idx'][i]) + \
+                                           "' filter='" + str(data[cat]['filter'][i]) + "'/>\n")
 
 
 def load_candidates(filename, verbose=False):
     if os.path.getsize(filename) > 0:
         try:
-            # multibeam test data
+                # DSA data post-coincidencing
             all_cands = \
                 np.loadtxt(filename, ndmin=1,
-                    dtype={'names': ('snr','samp_idx','time','filter',
-                                     'dm_trial','dm','members','begin','end',
-                                     'nbeams','beam_mask','prim_beam',
-                                     'max_snr','beam'),
-                           'formats': ('f4', 'i4', 'f4', 'i4',
-                                       'i4', 'f4', 'i4', 'i4', 'i4',
-                                       'i4', 'i4', 'i4',
-                                       'f4', 'i4')})
+                    dtype={'names': ('snr','if','samp_idx','time',
+                                     'filter','dm_trial','dm','members','beam'),
+                           'formats': ('f4', 'i4', 'i4', 'f4',
+                                       'i4', 'i4','f4', 'i4',
+                                       'i4')})
         except IndexError:
             try:
-                # DSA data post-coincidencing
+                # DSA data pre-coincidencing
+                # itime=samp_idx, mjds=time (different units), ibox=filter, ibeam=beam, idm=dm_trial
                 all_cands = \
                     np.loadtxt(filename, ndmin=1,
                         dtype={'names': ('snr','if','samp_idx','time',
-                                         'filter','dm_trial','dm','members','beam'),
+                                         'filter','dm_trial','dm','beam'),
                                'formats': ('f4', 'i4', 'i4', 'f4',
-                                           'i4', 'i4','f4', 'i4',
-                                           'i4')})
+                                           'i4', 'i4', 'f4', 'i4')})
             except IndexError:
-                try:
-                    # DSA data pre-coincidencing
-                    # itime=samp_idx, mjds=time (different units), ibox=filter, ibeam=beam, idm=dm_trial
-                    all_cands = \
-                        np.loadtxt(filename, ndmin=1,
-                            dtype={'names': ('snr','if','samp_idx','time',
-                                             'filter','dm_trial','dm','beam'),
-                                   'formats': ('f4', 'i4', 'i4', 'f4',
-                                               'i4', 'i4', 'f4', 'i4')})
-                except IndexError:
-                    raise
-                else:
-                    multibeam = False
-            else:
-                multibeam = False
-        else:
-            multibeam = True
+                raise
 
-            # Adjust for 0-based indexing
-            all_cands['prim_beam'] -= 1
-            all_cands['beam'] -= 1
     else:
         if verbose:
             print("Candidate file is empty!")
@@ -226,16 +166,11 @@ def load_candidates(filename, verbose=False):
                                          'dm_trial','dm','members','begin','end'),
                                'formats': ('f4', 'i4', 'f4', 'i4',
                                            'i4', 'f4', 'i4', 'i4', 'i4')})
-        multibeam = False
 
     if verbose:
-        if multibeam:
-            print("Loaded %i candidates from multiple beams\n" % len(all_cands))
-        else:
-            print("Loaded %i candidates from one beam\n" % len(all_cands))
+        print("Loaded %i candidates from one beam\n" % len(all_cands))
 
-    return all_cands, multibeam
-
+    return all_cands
 
 if __name__ == "__main__":
     import argparse
@@ -275,12 +210,12 @@ if __name__ == "__main__":
         names = ["valid"]
         verbose = False
 
-    all_cands, multibeam = load_candidates(filename, verbose)
+    all_cands = load_candidates(filename, verbose)
 
     CC = Cand_Classifier(args.snr_cut, args.members_cut, args.nbeams_cut, \
                          args.dm_cut, args.filter_cut, args.beam_mask, \
                          args.chan_1, args.chan_bw, args.tsamp)
-    categories = CC.categories(all_cands, multibeam, verbose)
+    categories = CC.categories(all_cands, verbose)
 
     text_output = TextOutput()
 
