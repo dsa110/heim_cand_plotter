@@ -20,8 +20,12 @@ def TimeDMPlot(ax,data,duration=None,snr_cut=6.5,snr_thr=25.,mps=30.,multibeam=F
         if duration != None:
             ax.set_xlim(0.,duration) #duration in seconds
         else:
-            ax.set_xlim(0.,TT.max()*1.05)
-        ax.set_ylim(1.,DMS.max()*1.05)
+            rr = TT.max() - TT.min()
+            TTmin = TT.min() - 0.1*max(rr, 4)
+            TTmax = TT.max() + 0.1*max(rr, 4)
+            ax.set_xlim(TTmin, TTmax)
+#        ax.set_ylim(1.,DMS.max()*1.05)
+        ax.set_ylim(1., 2000)
         ax.set_yscale('log')
 
     if axlabel == True:
@@ -116,7 +120,7 @@ def DMSNRPlot(ax,ax_cbar,data,tsamp=54.613e-6):
         print("\n    WARNING: The SNR of a candidate is higher than the maximum SNRs plotted!\n")
 
     ax.set_xlabel('$\\rm DM\;(pc\;cm^{-3})$', size=12)
-    ax.set_ylabel('$\\rm SNR$', size=12)
+    ax.set_ylabel('$\\rm SNR vs DM$', size=12)
 
     # Plot data
     if (len(data['noise']['snr']) > 0):
@@ -171,7 +175,7 @@ def DMHistPlot(ax,all_cands,nbins=30,multibeam=False):
         ax.hist(all_cands['dm'],bins=logbins,histtype='step')
 
     ### Set global plot window parameters
-    ax.set_xlim(dm_min,all_cands['dm'].max())
+    ax.set_xlim(dm_min, all_cands['dm'].max())
     ax.set_xscale('log')
     ax.set_ylim(1.,2000.) #As in heimdall plotter
     ax.set_yscale('log')
@@ -184,7 +188,7 @@ def DMHistPlot(ax,all_cands,nbins=30,multibeam=False):
     ax.yaxis.set_major_formatter(formatter)
 
     ax.set_xlabel('$\\rm DM\;(pc\;cm^{-3})$', size=12)
-    ax.set_ylabel('$\\rm Candidate count$', size=12)
+    ax.set_ylabel('$\\rm DM histogram$', size=12)
 
 def TimeBeamPlot(ax,data,duration=None,snr_cut=6.5,snr_thr=25.,mps=30.,multibeam=False,axrange=True,axlabel=True):
     ax.cla() #Clear the current axes
@@ -202,8 +206,11 @@ def TimeBeamPlot(ax,data,duration=None,snr_cut=6.5,snr_thr=25.,mps=30.,multibeam
         if duration != None:
             ax.set_xlim(0.,duration) #duration in seconds
         else:
-            ax.set_xlim(0.,TT.max()*1.05)
-        ax.set_ylim(1.,B.max()*1.05)
+            rr = TT.max() - TT.min()
+            TTmin = TT.min() - 0.1*max(rr, 4)
+            TTmax = TT.max() + 0.1*max(rr, 4)
+            ax.set_xlim(TTmin, TTmax)
+        ax.set_ylim(0, 257)
 
     if axlabel == True:
         ax.set_xlabel('$\\rm Time\; (sec)$', size=12)
